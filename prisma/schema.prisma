@@ -1,0 +1,150 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum JovemRole {
+  MEMBRO
+  ADMINISTRADOR
+}
+
+enum EquipePapelJovem {
+  COORDENADOR
+  MEMBRO
+}
+
+enum EquipePapelEcc {
+  COORDENADOR
+  MEMBRO
+}
+
+model Encontro {
+  id        String   @id @default(uuid())
+  tema      String   @db.VarChar(150)
+  ano       DateTime @db.Date
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  jovemEncontroEquipes     JovemEncontroEquipe[]
+  encontroEncontristas     EncontroEncontrista[]
+  membroEccEncontroEquipes MembroEccEncontroEquipe[]
+  circulos                 Circulo[]
+}
+
+model Jovem {
+  id             String    @id @default(uuid())
+  nome           String    @db.VarChar(100)
+  telefone       String    @db.VarChar(15)
+  endereco       String    @db.VarChar(50)
+  nomePai        String    @db.VarChar(50)
+  nomeMae        String    @db.VarChar(50)
+  dataNascimento DateTime  @db.Date
+  apelido        String    @db.VarChar(50)
+  role           JovemRole @default(MEMBRO)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  jovemEncontroEquipes JovemEncontroEquipe[]
+  encontroEncontristas EncontroEncontrista[]
+  circulos             Circulo[]
+}
+
+model Equipe {
+  id        String   @id @default(uuid())
+  nome      String   @db.VarChar(50)
+  descricao String   @db.VarChar(100)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  jovemEncontroEquipes     JovemEncontroEquipe[]
+  membroEccEncontroEquipes MembroEccEncontroEquipe[]
+}
+
+model JovemEncontroEquipe {
+  id         String           @id @default(uuid())
+  jovemId    String
+  encontroId String
+  equipeId   String
+  role       EquipePapelJovem @default(MEMBRO)
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+
+  jovem    Jovem    @relation(fields: [jovemId], references: [id], onDelete: Cascade)
+  encontro Encontro @relation(fields: [encontroId], references: [id], onDelete: Cascade)
+  equipe   Equipe   @relation(fields: [equipeId], references: [id], onDelete: Cascade)
+
+  @@unique([jovemId, encontroId, equipeId])
+}
+
+model EncontroEncontrista {
+  id         String   @id @default(uuid())
+  jovemId    String
+  encontroId String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  jovem    Jovem    @relation(fields: [jovemId], references: [id], onDelete: Cascade)
+  encontro Encontro @relation(fields: [encontroId], references: [id], onDelete: Cascade)
+
+  @@unique([jovemId, encontroId])
+}
+
+model MembroEcc {
+  id            String    @id @default(uuid())
+  nome          String    @db.VarChar(50)
+  endereco      String    @db.VarChar(50)
+  telefone      String    @db.VarChar(15)
+  conjugueId    String?
+  dataCasamento DateTime? @db.Date
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  conjugue                 MembroEcc?                @relation("Conjugue", fields: [conjugueId], references: [id], onDelete: SetNull)
+  conjugueDe               MembroEcc[]               @relation("Conjugue")
+  membroEccEncontroEquipes MembroEccEncontroEquipe[]
+}
+
+model MembroEccEncontroEquipe {
+  id         String         @id @default(uuid())
+  membroEccId String
+  encontroId String
+  equipeId   String
+  role       EquipePapelEcc @default(COORDENADOR)
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+
+  membroEcc MembroEcc @relation(fields: [membroEccId], references: [id], onDelete: Cascade)
+  encontro  Encontro  @relation(fields: [encontroId], references: [id], onDelete: Cascade)
+  equipe    Equipe    @relation(fields: [equipeId], references: [id], onDelete: Cascade)
+
+  @@unique([membroEccId, encontroId, equipeId])
+}
+
+model Cor {
+  id        String   @id @default(uuid())
+  nome      String   @db.VarChar(50)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  circulos Circulo[]
+}
+
+model Circulo {
+  id         String   @id @default(uuid())
+  corId      String
+  jovemId    String
+  encontroId String
+  nome       String   @db.VarChar(50)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  cor      Cor      @relation(fields: [corId], references: [id], onDelete: Restrict)
+  jovem    Jovem    @relation(fields: [jovemId], references: [id], onDelete: Cascade)
+  encontro Encontro @relation(fields: [encontroId], references: [id], onDelete: Cascade)
+
+  @@unique([jovemId, encontroId])
+}
